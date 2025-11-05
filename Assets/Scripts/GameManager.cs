@@ -1,18 +1,45 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    public static GameManager Instance { get; private set; }
+
+    private int score;
+
+    private void Awake()
     {
-        
+        // Set up the singleton
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    // Update is called once per frame
-    void Update()
+    public void OnBrickHit(Brick brick)
     {
-        
+        if (!brick.unbreakable)
+        {
+            score += brick.points;
+            Debug.Log($"Brick hit! +{brick.points} points. Total score: {score}");
+        }
+        else
+        {
+            Debug.Log("Hit an unbreakable brick!");
+        }
+    }
+
+    public void ResetGame()
+    {
+        score = 0;
+        Debug.Log("Game reset.");
+    }
+
+    public int GetScore()
+    {
+        return score;
     }
 }
