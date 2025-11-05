@@ -28,7 +28,7 @@ public class Brick : MonoBehaviour
 
         if (unbreakable)
         {
-            // Optional: Give unbreakable bricks a unique sprite if you want.
+            // Optionally assign a unique sprite or color here.
             return;
         }
 
@@ -60,12 +60,21 @@ public class Brick : MonoBehaviour
             spriteRenderer.sprite = states[health - 1];
         }
 
-        GameManager.Instance.OnBrickHit(this);
+        // Safe GameManager call
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnBrickHit(this);
+        }
+        else
+        {
+            Debug.LogWarning($"GameManager.Instance is null when '{name}' was hit! Make sure a GameManager exists in the scene.");
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.name == "Ball")
+        // Safer check — use tag instead of name for flexibility
+        if (collision.gameObject.CompareTag("Ball"))
         {
             Hit();
         }
