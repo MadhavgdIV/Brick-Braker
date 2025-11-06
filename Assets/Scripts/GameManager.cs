@@ -53,7 +53,7 @@ public class GameManager : MonoBehaviour
         if (gameOverText != null)
         {
             gameOverText.gameObject.SetActive(true);
-            gameOverText.text = "GAME OVER!";
+            //gameOverText.text = "GAME OVER!";
         }
         else
         {
