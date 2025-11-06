@@ -7,6 +7,8 @@ public class MissZone : MonoBehaviour
     {
         if (other.CompareTag("Ball"))
         {
+            // Play miss sound
+            AudioManager.Instance?.PlayBallMiss();
             GameManager.Instance.OnBallMiss();
         }
     }

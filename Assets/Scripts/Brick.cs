@@ -26,28 +26,19 @@ public class Brick : MonoBehaviour
     {
         gameObject.SetActive(true);
 
-        if (unbreakable)
-        {
-            // Optionally assign a unique sprite or color here.
-            return;
-        }
+        if (unbreakable) return;
 
         health = states.Length;
 
         if (health > 0)
-        {
             spriteRenderer.sprite = states[health - 1];
-        }
         else
-        {
             Debug.LogWarning($"Brick '{name}' has no sprite states assigned!");
-        }
     }
 
     private void Hit()
     {
-        if (unbreakable)
-            return;
+        if (unbreakable) return;
 
         health--;
 
@@ -60,20 +51,15 @@ public class Brick : MonoBehaviour
             spriteRenderer.sprite = states[health - 1];
         }
 
-        // Safe GameManager call
         if (GameManager.Instance != null)
-        {
             GameManager.Instance.OnBrickHit(this);
-        }
-        else
-        {
-            Debug.LogWarning($"GameManager.Instance is null when '{name}' was hit! Make sure a GameManager exists in the scene.");
-        }
+
+        // Play brick hit sound
+        AudioManager.Instance?.PlayBrickHit();
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // Safer check — use tag instead of name for flexibility
         if (collision.gameObject.CompareTag("Ball"))
         {
             Hit();
