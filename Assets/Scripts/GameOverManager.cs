@@ -5,7 +5,8 @@ using UnityEngine.SceneManagement;
 public class GameOverManager : MonoBehaviour
 {
     public TextMeshProUGUI finalScoreText;
-    public string mainGameSceneName = "Game"; // <-- Updated to your main game scene
+    public string mainGameSceneName = "Game"; // Main game scene
+    public string menuSceneName = "Menu";     // Menu scene
 
     private void Start()
     {
@@ -16,12 +17,18 @@ public class GameOverManager : MonoBehaviour
 
     public void OnRestartButton()
     {
-        Debug.Log("Restart button clicked!"); // should appear in console
+        Debug.Log("Restart button clicked!");
 
         if (GameManager.Instance != null)
             GameManager.Instance.ResetGame();
 
         SceneManager.LoadScene(mainGameSceneName);
     }
+
+    // Add this method for the Exit button
+    public void OnExitButton()
+    {
+        Debug.Log("Exit button clicked!");
+        SceneManager.LoadScene(menuSceneName);
+    }
 }
-        
