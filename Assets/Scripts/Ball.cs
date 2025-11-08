@@ -3,16 +3,13 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Ball : MonoBehaviour
 {
-    private Rigidbody2D rb;
     public float speed = 10f;
+    public float startDelay = 1f;
+    private Rigidbody2D rb;
 
-    private void Awake()
+    void Start()
     {
         rb = GetComponent<Rigidbody2D>();
-    }
-
-    private void Start()
-    {
         ResetBall();
     }
 
@@ -20,20 +17,22 @@ public class Ball : MonoBehaviour
     {
         rb.velocity = Vector2.zero;
         transform.position = Vector2.zero;
-
+        gameObject.SetActive(true);
         CancelInvoke();
-        Invoke(nameof(SetRandomTrajectory), 1f);
+        Invoke(nameof(LaunchBall), startDelay);
     }
 
-    private void SetRandomTrajectory()
+    void LaunchBall()
     {
-        Vector2 force = new Vector2(Random.Range(-1f, 1f), -1f);
-        rb.AddForce(force.normalized * speed, ForceMode2D.Impulse);
+        float x = Random.Range(-0.5f, 0.5f);
+        float y = -1f;
+        Vector2 direction = new Vector2(x, y).normalized;
+        rb.velocity = direction * speed;
     }
 
-    private void FixedUpdate()
+    void FixedUpdate()
     {
-        rb.velocity = rb.velocity.normalized * speed;
+        if (rb.velocity.magnitude > 0)
+            rb.velocity = rb.velocity.normalized * speed;
     }
-
 }

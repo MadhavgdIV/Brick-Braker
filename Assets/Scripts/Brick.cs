@@ -4,8 +4,7 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class Brick : MonoBehaviour
 {
-    [Header("Brick Settings")]
-    public Sprite[] states = new Sprite[0];
+    public Sprite[] states;
     public int points = 100;
     public bool unbreakable;
 
@@ -25,15 +24,10 @@ public class Brick : MonoBehaviour
     public void ResetBrick()
     {
         gameObject.SetActive(true);
-
         if (unbreakable) return;
 
         health = states.Length;
-
-        if (health > 0)
-            spriteRenderer.sprite = states[health - 1];
-        else
-            Debug.LogWarning($"Brick '{name}' has no sprite states assigned!");
+        if (health > 0) spriteRenderer.sprite = states[health - 1];
     }
 
     private void Hit()
@@ -45,14 +39,12 @@ public class Brick : MonoBehaviour
         if (health <= 0)
         {
             gameObject.SetActive(false);
+            GameManager.Instance?.OnBrickHit(points);
         }
         else if (health - 1 >= 0 && health - 1 < states.Length)
         {
             spriteRenderer.sprite = states[health - 1];
         }
-
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnBrickHit(this);
 
         // Play brick hit sound
         AudioManager.Instance?.PlayBrickHit();

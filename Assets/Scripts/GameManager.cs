@@ -1,80 +1,76 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
+    public static GameManager Instance;
 
-    [Header("UI Elements (Optional in Main Scene)")]
-    public TextMeshProUGUI gameOverText; // Assign if you want in-game UI
+    [Header("Scene Names")]
+    public string menuSceneName = "Menu";
+    public string gameSceneName = "Game";
+    public string gameOverSceneName = "GameOverScene";
 
     private int score = 0;
     private bool isGameOver = false;
 
-    [Header("Scene Names")]
-    public string mainGameSceneName = "Game";       // <-- Updated to your main game scene
-    public string gameOverSceneName = "GameOverScene";
-
-    private void Awake()
+    void Awake()
     {
-        if (Instance != null && Instance != this)
+        // Singleton pattern
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
         {
             Destroy(gameObject);
-            return;
-        }
-
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-    }
-
-    private void Start()
-    {
-        if (gameOverText != null)
-            gameOverText.gameObject.SetActive(false);
-    }
-
-    public void OnBrickHit(Brick brick)
-    {
-        if (!brick.unbreakable)
-        {
-            score += brick.points;
-            Debug.Log($"Brick hit! +{brick.points} points. Total score: {score}");
         }
     }
 
+    // -------------------------------
+    // Score Management
+    // -------------------------------
+    public void OnBrickHit(int points)
+    {
+        if (isGameOver) return;
+        score += points;
+        Debug.Log("Brick hit! +" + points + " points. Total: " + score);
+    }
+
+    public int GetScore() => score;
+
+    // -------------------------------
+    // Game Flow
+    // -------------------------------
     public void OnBallMiss()
     {
         if (isGameOver) return;
 
         isGameOver = true;
-        Debug.Log("Ball missed! Game over!");
+        Debug.Log("Ball missed! Game Over!");
 
-        if (gameOverText != null)
-            ShowGameOverUI();
-
+        // Save score for GameOver scene
         PlayerPrefs.SetInt("FinalScore", score);
+
+        // Load GameOver scene
         SceneManager.LoadScene(gameOverSceneName);
     }
 
-    private void ShowGameOverUI()
+    public void RestartGame()
     {
-        if (gameOverText != null)
-        {
-            gameOverText.gameObject.SetActive(true);
-            gameOverText.text = $"GAME OVER!\nScore: {score}";
-        }
+        ResetGame();
+        SceneManager.LoadScene(gameSceneName);
     }
 
-    public void ResetGame()
+    public void GoToMenu()
+    {
+        ResetGame();
+        SceneManager.LoadScene(menuSceneName);
+    }
+
+    private void ResetGame()
     {
         score = 0;
         isGameOver = false;
-        Time.timeScale = 1f;
-
-        if (gameOverText != null)
-            gameOverText.gameObject.SetActive(false);
     }
-
-    public int GetScore() => score;
 }
