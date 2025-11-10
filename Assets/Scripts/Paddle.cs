@@ -3,25 +3,23 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Paddle : MonoBehaviour
 {
-    private Rigidbody2D rb;          // Rigidbody for movement
-    private Vector2 direction;       // Direction of paddle movement
+    private Rigidbody2D rb;
+    private Vector2 direction;
 
-    public float speed = 30f;        // How fast the paddle moves
-    public float maxBounceAngle = 75f; // Maximum angle the ball can bounce off
+    public float moveSpeed = 15f;
+    public float maxBounceAngle = 60f; // Smaller angle for smoother gameplay
 
     void Awake()
     {
-        // Get the Rigidbody2D component attached to this object
         rb = GetComponent<Rigidbody2D>();
+        rb.freezeRotation = true;
     }
 
     void Start()
     {
-        // Reset the paddle to the starting position
         ResetPaddle();
     }
 
-    // Reset the paddle to the center horizontally
     public void ResetPaddle()
     {
         rb.velocity = Vector2.zero;
@@ -30,54 +28,45 @@ public class Paddle : MonoBehaviour
 
     void Update()
     {
-        // Check input every frame
+        // Direct movement (easier and more responsive)
+        float moveInput = 0f;
         if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
-        {
-            direction = Vector2.left;
-        }
+            moveInput = -1f;
         else if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
-        {
-            direction = Vector2.right;
-        }
-        else
-        {
-            direction = Vector2.zero; // No movement
-        }
+            moveInput = 1f;
+
+        direction = new Vector2(moveInput, 0f);
     }
 
     void FixedUpdate()
     {
-        // Move the paddle using physics
-        if (direction != Vector2.zero)
-        {
-            rb.AddForce(direction * speed);
-        }
+        // Direct velocity movement (not physics-based)
+        rb.velocity = direction * moveSpeed;
     }
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        // Only react if the ball hits the paddle
         if (!collision.gameObject.CompareTag("Ball"))
             return;
 
-        Rigidbody2D ballRb = collision.rigidbody;        // Get ball's Rigidbody
-        Collider2D paddleCollider = collision.otherCollider; // Get paddle collider
+        Rigidbody2D ballRb = collision.rigidbody;
+        Collider2D paddleCollider = collision.otherCollider;
 
-        // Calculate how far from the center the ball hit
-        float distanceFromCenter = ballRb.transform.position.x - paddleCollider.bounds.center.x;
+        // How far from the center did the ball hit (-1 to 1)
+        float distanceFromCenter = (ballRb.position.x - paddleCollider.bounds.center.x) / (paddleCollider.bounds.size.x / 2);
+        distanceFromCenter = Mathf.Clamp(distanceFromCenter, -1f, 1f);
 
-        // Calculate the bounce angle based on hit position
-        float normalizedDistance = distanceFromCenter / (paddleCollider.bounds.size.x / 2);
-        float bounceAngle = normalizedDistance * maxBounceAngle;
+        // Calculate the new bounce angle
+        float bounceAngle = distanceFromCenter * maxBounceAngle;
 
-        // Convert angle to a direction vector
-        Vector2 newDirection = Quaternion.Euler(0, 0, bounceAngle) * Vector2.up;
+        // Convert to a direction vector
+        float radians = bounceAngle * Mathf.Deg2Rad;
+        Vector2 newDirection = new Vector2(Mathf.Sin(radians), 1f).normalized;
 
-        // Keep the ball speed constant
-        float speedMagnitude = ballRb.velocity.magnitude;
-        ballRb.velocity = newDirection.normalized * speedMagnitude;
+        // Keep the same speed
+        float ballSpeed = ballRb.velocity.magnitude;
+        ballRb.velocity = newDirection * ballSpeed;
 
-        // Play paddle hit sound (if AudioManager exists)
         AudioManager.Instance?.PlayPaddleHit();
     }
 }

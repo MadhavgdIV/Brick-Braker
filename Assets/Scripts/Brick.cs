@@ -26,6 +26,9 @@ public class Brick : MonoBehaviour
         gameObject.SetActive(true);
         if (unbreakable) return;
 
+        // Register this breakable brick with the game manager so it can track remaining bricks
+        GameManager.Instance?.RegisterBreakable();
+
         health = states.Length;
         if (health > 0) spriteRenderer.sprite = states[health - 1];
     }
