@@ -16,6 +16,9 @@ public class GameManager : MonoBehaviour
     // Track breakable bricks
     private int remainingBreakableBricks = 0;
 
+    // Attempts
+    private int attemptsLeft = 0;
+
     void Awake()
     {
         // Singleton pattern
@@ -30,29 +33,28 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    void Start()
+    {
+        // read attempts set by the Lobby (default from EconomyManager otherwise)
+        attemptsLeft = PlayerPrefs.GetInt("Game_Attempts", EconomyManager.Instance != null ? EconomyManager.Instance.attemptsDefault : 3);
+    }
+
     // -------------------------------
     // Brick / Score Management
     // -------------------------------
-    // Called by Brick.ResetBrick() for each breakable brick
     public void RegisterBreakable()
     {
-        // Only register during gameplay scenes
         remainingBreakableBricks++;
-        //Debug.Log("Registered breakable brick. Remaining: " + remainingBreakableBricks);
     }
 
-    // Called by Brick when it is destroyed (previously OnBrickHit)
     public void OnBrickHit(int points)
     {
         if (isGameOver) return;
 
-        // Add points
         score += points;
         Debug.Log("Brick destroyed! +" + points + " points. Total: " + score);
 
-        // Decrement remaining breakable bricks and check for win
         remainingBreakableBricks--;
-        //Debug.Log("Breakable bricks left: " + remainingBreakableBricks);
         if (remainingBreakableBricks <= 0)
         {
             OnAllBricksCleared();
@@ -64,14 +66,39 @@ public class GameManager : MonoBehaviour
     // -------------------------------
     // Game Flow
     // -------------------------------
+    // Called when ball misses the paddle
     public void OnBallMiss()
     {
         if (isGameOver) return;
 
-        isGameOver = true;
-        Debug.Log("Ball missed! Game Over!");
+        attemptsLeft--;
+        Debug.Log("Ball missed. Attempts left: " + attemptsLeft);
 
-        FinalizeScoreAndLoadGameOver(false);
+        if (attemptsLeft > 0)
+        {
+            // Respawn ball / continue round instead of immediate game over
+            // You should implement respawn logic for the Ball or call an existing spawn routine.
+            RespawnBall();
+        }
+        else
+        {
+            isGameOver = true;
+            FinalizeScoreAndLoadGameOver(false);
+        }
+    }
+
+    private void RespawnBall()
+    {
+        // Example: find Ball and reset position / velocity, or reload a Ball prefab
+        Ball ball = FindObjectOfType<Ball>();
+        if (ball != null)
+        {
+            ball.ResetBallForRetry(); // you'll add this method to Ball.cs
+        }
+        else
+        {
+            Debug.LogWarning("No Ball found to respawn.");
+        }
     }
 
     private void OnAllBricksCleared()
@@ -81,30 +108,32 @@ public class GameManager : MonoBehaviour
         isGameOver = true;
         Debug.Log("All bricks cleared! You Win!");
 
+        // award coins for win
+        if (EconomyManager.Instance != null)
+        {
+            EconomyManager.Instance.AddCoins(EconomyManager.Instance.winReward);
+        }
+
         FinalizeScoreAndLoadGameOver(true);
     }
 
-    // Shared finalization logic for win/lose
     private void FinalizeScoreAndLoadGameOver(bool didWin)
     {
-        // Save final score for GameOver scene
         PlayerPrefs.SetInt("FinalScore", score);
-
-        // Save result: 1 = win, 0 = lose
         PlayerPrefs.SetInt("GameResult", didWin ? 1 : 0);
 
-        // Update high score if needed
+        // high score handling
         int prevHigh = PlayerPrefs.GetInt("HighScore", 0);
         if (score > prevHigh)
         {
             PlayerPrefs.SetInt("HighScore", score);
             Debug.Log("New high score: " + score);
         }
-
-        // Make sure prefs are written
         PlayerPrefs.Save();
 
-        // Load GameOver scene
+        // Also save economy file now (if applicable)
+        EconomyManager.Instance?.SaveEconomy();
+
         SceneManager.LoadScene(gameOverSceneName);
     }
 
@@ -125,5 +154,6 @@ public class GameManager : MonoBehaviour
         score = 0;
         isGameOver = false;
         remainingBreakableBricks = 0;
+        // attemptsLeft will be re-read on Start when the Game scene loads
     }
 }

@@ -2,43 +2,50 @@ using UnityEngine;
 
 public class AudioManager : MonoBehaviour
 {
-    public static AudioManager Instance { get; private set; }
+    public static AudioManager Instance;
 
-    [Header("Audio Clips")]
-    public AudioClip hitBrickClip;
-    public AudioClip hitPaddleClip;
+    [Header("SFX")]
+    public AudioClip brickHitClip;
+    public AudioClip brickBreakClip;
+    public AudioClip paddleHitClip;   // <-- new paddle hit clip
     public AudioClip ballMissClip;
-    public AudioClip backgroundMusicClip;
+    public AudioClip winClip;
+    public AudioClip loseClip;
+
+    [Header("Settings")]
+    public float sfxVolume = 1f;
 
     private AudioSource sfxSource;
-    private AudioSource musicSource;
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+            sfxSource = gameObject.AddComponent<AudioSource>();
+            sfxSource.playOnAwake = false;
+            sfxSource.loop = false;
+        }
+        else
         {
             Destroy(gameObject);
-            return;
         }
-
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        // Create audio sources
-        sfxSource = gameObject.AddComponent<AudioSource>();
-        musicSource = gameObject.AddComponent<AudioSource>();
-
-        musicSource.loop = true;
-        musicSource.clip = backgroundMusicClip;
-        musicSource.Play();
     }
 
-    public void PlaySFX(AudioClip clip)
+    private void PlaySfx(AudioClip clip)
     {
+        if (clip == null) return;
+        if (sfxSource == null) sfxSource = gameObject.AddComponent<AudioSource>();
+        sfxSource.volume = sfxVolume;
         sfxSource.PlayOneShot(clip);
     }
 
-    public void PlayBrickHit() => PlaySFX(hitBrickClip);
-    public void PlayPaddleHit() => PlaySFX(hitPaddleClip);
-    public void PlayBallMiss() => PlaySFX(ballMissClip);
+    // Convenience methods
+    public void PlayBrickHit() => PlaySfx(brickHitClip);
+    public void PlayBrickBreak() => PlaySfx(brickBreakClip);
+    public void PlayPaddleHit() => PlaySfx(paddleHitClip); // <-- new method
+    public void PlayBallMiss() => PlaySfx(ballMissClip);
+    public void PlayWin() => PlaySfx(winClip);
+    public void PlayLose() => PlaySfx(loseClip);
 }
