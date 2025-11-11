@@ -7,14 +7,11 @@ public class MissZone : MonoBehaviour
     {
         if (other.CompareTag("Ball"))
         {
-            // Stop the ball
-            other.gameObject.SetActive(false);
-
-            // Play miss sound (optional)
+            // Play miss sound (optional) — keep as-is in AudioManager
             AudioManager.Instance?.PlayBallMiss();
 
-            // Tell GameManager
-            GameManager.Instance?.OnBallMiss();
+            // Tell GameManager and pass the ball GameObject (so it can decide what to do)
+            GameManager.Instance?.OnBallMiss(other.gameObject);
         }
     }
 }
