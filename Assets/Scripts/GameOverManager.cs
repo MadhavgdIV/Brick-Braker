@@ -5,8 +5,7 @@ public class GameOverManager : MonoBehaviour
 {
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
-    public TextMeshProUGUI resultText;
-    public TextMeshProUGUI coinsText;
+    public TextMeshProUGUI resultText; // "You Win!" or "Game Over"
 
     void Start()
     {
@@ -14,14 +13,19 @@ public class GameOverManager : MonoBehaviour
         int highScore = PlayerPrefs.GetInt("HighScore", 0);
         int gameResult = PlayerPrefs.GetInt("GameResult", 0); // 1 = win, 0 = lose
 
-        if (finalScoreText != null) finalScoreText.text = "Score: " + finalScore;
-        if (highScoreText != null) highScoreText.text = "High Score: " + highScore;
-        if (resultText != null) resultText.text = (gameResult == 1) ? "YOU WIN!" : "GAME OVER";
-        if (coinsText != null) coinsText.text = "Coins: " + (EconomyManager.Instance != null ? EconomyManager.Instance.GetCoins() : PlayerPrefs.GetInt("Coins", 0));
+        if (finalScoreText != null)
+            finalScoreText.text = "Score: " + finalScore;
+
+        if (highScoreText != null)
+            highScoreText.text = "High Score: " + highScore;
+
+        if (resultText != null)
+            resultText.text = (gameResult == 1) ? "YOU WIN!" : "GAME OVER";
     }
 
     public void OnRestartButton()
     {
+        // Note: GameManager is a DontDestroyOnLoad singleton; just call its restart
         GameManager.Instance?.RestartGame();
     }
 
