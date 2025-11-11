@@ -6,13 +6,20 @@ public class Paddle : MonoBehaviour
     private Rigidbody2D rb;
     private Vector2 direction;
 
+    [Header("Movement")]
     public float moveSpeed = 15f;
     public float maxBounceAngle = 60f; // Smaller angle for smoother gameplay
+
+    // remember original spawn position so ResetPaddle restores exactly
+    private Vector3 initialWorldPosition;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
         rb.freezeRotation = true;
+
+        // store the original position when the object is created/loaded
+        initialWorldPosition = transform.position;
     }
 
     void Start()
@@ -20,10 +27,16 @@ public class Paddle : MonoBehaviour
         ResetPaddle();
     }
 
+    /// <summary>
+    /// Resets the paddle to its original spawn position and stops movement.
+    /// </summary>
     public void ResetPaddle()
     {
-        rb.velocity = Vector2.zero;
-        transform.position = new Vector2(0f, transform.position.y);
+        if (rb != null)
+            rb.velocity = Vector2.zero;
+
+        // restore exactly to the stored initial position
+        transform.position = initialWorldPosition;
     }
 
     void Update()
@@ -41,7 +54,8 @@ public class Paddle : MonoBehaviour
     void FixedUpdate()
     {
         // Direct velocity movement (not physics-based)
-        rb.velocity = direction * moveSpeed;
+        if (rb != null)
+            rb.velocity = direction * moveSpeed;
     }
 
     void OnCollisionEnter2D(Collision2D collision)

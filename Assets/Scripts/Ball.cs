@@ -10,8 +10,8 @@ public class Ball : MonoBehaviour
     public float fallHeightOffset = 1.5f; // How far above paddle the ball spawns
 
     [Header("Optional References")]
-    [Tooltip("Assign Paddle here or tag your Paddle as 'Paddle'")]
-    public Transform paddleTransform;
+    [Tooltip("If you prefer to assign the paddle explicitly, drop it here. Otherwise the Ball will find the active object tagged 'Paddle'.")]
+    public Transform paddleTransform; // optional — may be null, we will try to find current paddle each reset
 
     private Rigidbody2D rb;
     private bool hasLaunched = false;
@@ -23,22 +23,20 @@ public class Ball : MonoBehaviour
         if (rb == null)
             Debug.LogError("Ball requires a Rigidbody2D.");
 
+        // cache the ball's initial world position (in case paddle isn't found)
         initialWorldPosition = transform.position;
-
-        // Try auto-find Paddle
-        if (paddleTransform == null)
-        {
-            GameObject paddleObj = GameObject.FindWithTag("Paddle");
-            if (paddleObj != null)
-                paddleTransform = paddleObj.transform;
-        }
     }
 
     void Start()
     {
+        // ensure the ball starts in the reset state
         ResetBall();
     }
 
+    /// <summary>
+    /// Reset ball to spawn position above the current paddle (if available) or the initial saved position.
+    /// This always searches for a live Paddle object so new paddle instances are respected.
+    /// </summary>
     public void ResetBall()
     {
         if (rb == null)
@@ -46,35 +44,38 @@ public class Ball : MonoBehaviour
             rb = GetComponent<Rigidbody2D>();
             if (rb == null)
             {
-                Debug.LogError("Ball.ResetBall: Missing Rigidbody2D.");
+                Debug.LogError("Ball.ResetBall: Rigidbody2D missing; cannot reset.");
                 return;
             }
         }
 
+        // stop movement
         rb.velocity = Vector2.zero;
         rb.angularVelocity = 0f;
         rb.simulated = true;
 
-        //  Position above paddle
-        Vector3 startPos = initialWorldPosition;
-        if (paddleTransform != null)
-        {
-            startPos = paddleTransform.position + new Vector3(0f, fallHeightOffset, 0f);
-        }
-        else
+        // find the current paddle each time (do not rely on a stale cached transform)
+        Transform currentPaddle = paddleTransform;
+        if (currentPaddle == null)
         {
             GameObject paddleObj = GameObject.FindWithTag("Paddle");
             if (paddleObj != null)
-            {
-                paddleTransform = paddleObj.transform;
-                startPos = paddleTransform.position + new Vector3(0f, fallHeightOffset, 0f);
-            }
+                currentPaddle = paddleObj.transform;
         }
 
-        transform.position = startPos;
+        // Determine spawn position
+        Vector3 spawnPos = initialWorldPosition;
+        if (currentPaddle != null)
+        {
+            // spawn directly above the paddle using the paddle's current Y (so paddle reset is reflected)
+            spawnPos = currentPaddle.position + new Vector3(0f, fallHeightOffset, 0f);
+        }
+
+        transform.position = spawnPos;
         hasLaunched = false;
         gameObject.SetActive(true);
 
+        // ensure any prior invoke canceled then schedule drop
         CancelInvoke();
         Invoke(nameof(DropBall), startDelay);
     }

@@ -65,7 +65,10 @@ public class GameManager : MonoBehaviour
         remainingBreakableBricks = 0;
 
         UpdateAttemptsUI();
-        ResetBallAndPaddle(); // safe because this runs after Game scene loads
+
+        // Reset paddle first, then ball so ball spawns above the paddle's reset position.
+        ResetPaddle();
+        ResetBall(); // reset only the ball (helpers below will find ball by tag)
     }
 
     // -------------------------------
@@ -107,8 +110,12 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log($"Ball missed — attempts left: {attemptsRemaining}. Respawning ball and resetting paddle.");
 
+            // IMPORTANT: reset paddle first so the ball will spawn relative to the paddle's reset position
+            ResetPaddle();
+
             if (ball != null)
             {
+                // Ensure ball is active and then reset it (ResetBall will look up the paddle and position above it)
                 ball.SetActive(true);
                 Ball ballComp = ball.GetComponent<Ball>();
                 if (ballComp != null)
@@ -118,11 +125,10 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                // fallback
+                // fallback: reset both in correct order
                 ResetBallAndPaddle();
             }
 
-            ResetPaddle();
             return;
         }
 
@@ -200,7 +206,19 @@ public class GameManager : MonoBehaviour
     }
 
     // Helpers to reset objects in the loaded Game scene
+    /// <summary>
+    /// Resets paddle first, then resets the ball so ball will spawn above paddle's reset position.
+    /// </summary>
     private void ResetBallAndPaddle()
+    {
+        // reset paddle first
+        ResetPaddle();
+
+        // then reset ball
+        ResetBall();
+    }
+
+    private void ResetBall()
     {
         GameObject ballObj = GameObject.FindWithTag("Ball");
         if (ballObj != null)
@@ -209,14 +227,12 @@ public class GameManager : MonoBehaviour
             if (b != null)
                 b.ResetBall();
             else
-                Debug.LogWarning("ResetBallAndPaddle: Ball found but no Ball component attached.");
+                Debug.LogWarning("ResetBall: Ball found but no Ball component attached.");
         }
         else
         {
-            Debug.LogWarning("ResetBallAndPaddle: No active Ball object found with tag 'Ball'.");
+            Debug.LogWarning("ResetBall: No active Ball object found with tag 'Ball'.");
         }
-
-        ResetPaddle();
     }
 
     private void ResetPaddle()
