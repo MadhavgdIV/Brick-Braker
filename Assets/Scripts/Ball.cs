@@ -55,7 +55,7 @@ public class Ball : MonoBehaviour
         rb.angularVelocity = 0f;
         rb.simulated = true;
 
-        // ✅ Position above paddle
+        //  Position above paddle
         Vector3 startPos = initialWorldPosition;
         if (paddleTransform != null)
         {

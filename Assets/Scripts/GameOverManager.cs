@@ -2,18 +2,15 @@ using System.IO;
 using UnityEngine;
 using TMPro;
 
-/// <summary>
-/// GameOver screen controller: shows final score, high score, win/lose text and current coins.
-/// This version is defensive: it makes sure EconomyManager exists (creates it if missing),
-/// and guards against unassigned UI references to avoid NullReferenceException.
-/// </summary>
+
 public class GameOverManager : MonoBehaviour
 {
     [Header("UI - assign in Inspector")]
     public TextMeshProUGUI finalScoreText;
     public TextMeshProUGUI highScoreText;
-    public TextMeshProUGUI resultText; // "YOU WIN!" or "GAME OVER"
-    public TextMeshProUGUI coinsText;  // show current coins
+    public TextMeshProUGUI resultText;      // "YOU WIN!" or "GAME OVER"
+    public TextMeshProUGUI coinsText;       // show current coins
+    public TextMeshProUGUI streakBonusText; // optional: separate field to show "+X bonus"
 
     void Start()
     {
@@ -35,13 +32,15 @@ public class GameOverManager : MonoBehaviour
         int coins = 0;
         if (EconomyManager.Instance != null)
         {
-            // Safe call
             coins = EconomyManager.Instance.GetCoins();
         }
         else
         {
             Debug.LogWarning("EconomyManager still null after attempted creation. Showing 0 coins.");
         }
+
+        // Last streak bonus (saved by GameManager before loading this scene)
+        int lastStreakBonus = PlayerPrefs.GetInt("LastStreakBonus", 0);
 
         // Safely populate UI elements (guard each one)
         if (finalScoreText != null)
@@ -63,12 +62,33 @@ public class GameOverManager : MonoBehaviour
             coinsText.text = "Coins: " + coins;
         else
             Debug.LogWarning("GameOverManager: coinsText is not assigned in the Inspector.");
+
+        // Show the streak bonus if the player won and a bonus exists
+        if (gameResult == 1 && lastStreakBonus > 0)
+        {
+            string bonusText = $"+{lastStreakBonus} bonus!";
+            if (streakBonusText != null)
+            {
+                streakBonusText.text = bonusText;
+            }
+            else
+            {
+                // fallback: append to the result text if no separate field assigned
+                if (resultText != null)
+                    resultText.text = resultText.text + " (" + bonusText + ")";
+            }
+        }
+        else
+        {
+            // clear the streakBonusText if assigned
+            if (streakBonusText != null)
+                streakBonusText.text = "";
+        }
     }
 
     // Optional UI hooks
     public void OnRestartButton()
     {
-        // Try to use GameManager if present
         if (GameManager.Instance != null)
             GameManager.Instance.RestartGame();
         else

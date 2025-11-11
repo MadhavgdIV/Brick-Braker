@@ -12,12 +12,15 @@ public class GameManager : MonoBehaviour
     public string gameOverSceneName = "GameOverScene";
 
     [Header("Economy / Rewards")]
-    public int winReward = 200;
+    [Tooltip("Coins awarded to the player when they win a level (base reward).")]
+    public int winReward = 200; // base reward on win
 
     [Header("Attempt Mode")]
+    [Tooltip("Maximum attempts (lives) allowed per play session.")]
     public int maxAttempts = 3;
-    public TextMeshProUGUI attemptsText; // optional UI to show attempts remaining
+    public TextMeshProUGUI attemptsText; // optional: assign in Game scene HUD
 
+    // runtime state
     private int attemptsRemaining;
     private int score = 0;
     private bool isGameOver = false;
@@ -25,6 +28,7 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
+        // Singleton pattern
         if (Instance == null)
         {
             Instance = this;
@@ -44,7 +48,7 @@ public class GameManager : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    // Only reset per-play state when the Game scene actually finishes loading.
+    // Reset per-play state when the Game scene finishes loading.
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         if (scene.name == gameSceneName)
@@ -61,9 +65,7 @@ public class GameManager : MonoBehaviour
         remainingBreakableBricks = 0;
 
         UpdateAttemptsUI();
-
-        // It's safe to reset ball/paddle here because this runs only after Game scene loads.
-        ResetBallAndPaddle();
+        ResetBallAndPaddle(); // safe because this runs after Game scene loads
     }
 
     // -------------------------------
@@ -79,7 +81,7 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
 
         score += points;
-        Debug.Log("Brick destroyed! +" + points + " points. Total: " + score);
+        Debug.Log($"Brick destroyed! +{points} points. Total: {score}");
 
         remainingBreakableBricks--;
         if (remainingBreakableBricks <= 0)
@@ -93,7 +95,7 @@ public class GameManager : MonoBehaviour
     // -------------------------------
     // Game Flow & Attempt handling
     // -------------------------------
-    // Called by MissZone (passes the ball GameObject)
+    // Called by MissZone (message passes the ball GameObject)
     public void OnBallMiss(GameObject ball)
     {
         if (isGameOver) return;
@@ -116,7 +118,7 @@ public class GameManager : MonoBehaviour
             }
             else
             {
-                // If ball wasn't provided or not found, try to reset (should be rare)
+                // fallback
                 ResetBallAndPaddle();
             }
 
@@ -124,7 +126,7 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // No attempts left -> final game over
+        // No attempts left -> final game over (loss)
         isGameOver = true;
         Debug.Log("No attempts remaining. Game Over!");
         FinalizeScoreAndLoadGameOver(false);
@@ -139,27 +141,65 @@ public class GameManager : MonoBehaviour
         FinalizeScoreAndLoadGameOver(true);
     }
 
+    // Shared finalization logic for win/lose
     private void FinalizeScoreAndLoadGameOver(bool didWin)
     {
+        // Save final score and win/lose flag for GameOver scene
         PlayerPrefs.SetInt("FinalScore", score);
         PlayerPrefs.SetInt("GameResult", didWin ? 1 : 0);
 
+        // Update high score if needed
         int prevHigh = PlayerPrefs.GetInt("HighScore", 0);
         if (score > prevHigh)
         {
             PlayerPrefs.SetInt("HighScore", score);
-            Debug.Log("New high score: " + score);
+            Debug.Log($"New high score: {score}");
         }
 
         PlayerPrefs.Save();
 
+        // Award coins and update streaks
+        int lastStreakBonus = 0;
+
         if (didWin)
-            EconomyManager.Instance?.AddCoins(winReward);
+        {
+            if (EconomyManager.Instance != null)
+            {
+                // Award base win reward
+                EconomyManager.Instance.AddCoins(winReward);
+
+                // Award the streak bonus (this increments persisted streak and returns bonus)
+                lastStreakBonus = EconomyManager.Instance.OnPlayerWinAndGetBonus();
+
+                Debug.Log($"Win: base reward {winReward} + streak bonus {lastStreakBonus} (streak now {EconomyManager.Instance.GetWinStreak()})");
+            }
+            else
+            {
+                Debug.LogWarning($"Player won but EconomyManager is missing; could not award {winReward} or streak bonus.");
+            }
+        }
+        else
+        {
+            // Player lost -> reset streak
+            if (EconomyManager.Instance != null)
+            {
+                EconomyManager.Instance.OnPlayerLose_ResetStreak();
+            }
+            else
+            {
+                Debug.LogWarning("Player lost but EconomyManager is missing; cannot reset streak.");
+            }
+        }
+
+        // Save lastStreakBonus for GameOver scene to display
+        PlayerPrefs.SetInt("LastStreakBonus", lastStreakBonus);
+        PlayerPrefs.Save();
 
         // Load GameOver scene
         SceneManager.LoadScene(gameOverSceneName);
     }
 
+    // Helpers to reset objects in the loaded Game scene
     private void ResetBallAndPaddle()
     {
         GameObject ballObj = GameObject.FindWithTag("Ball");
@@ -205,13 +245,12 @@ public class GameManager : MonoBehaviour
     // Public UI / flow helpers
     public void RestartGame()
     {
-        // Just load the Game scene — ResetForNewPlay will execute in OnSceneLoaded.
+        // Loading the Game scene will trigger ResetForNewPlay via OnSceneLoaded
         SceneManager.LoadScene(gameSceneName);
     }
 
     public void GoToMenu()
     {
-        // Just load the Menu scene — per-play resets will occur next time Game scene loads.
         SceneManager.LoadScene(menuSceneName);
     }
 }
