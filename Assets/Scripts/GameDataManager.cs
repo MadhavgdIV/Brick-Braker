@@ -44,10 +44,7 @@ public class GameDataManager : MonoBehaviour
         SaveNow();
     }
 
-    /// <summary>
-    /// Ensure a GameDataManager exists in the scene. If none exists, one will be created immediately.
-    /// Useful to call from other managers when you want to guarantee a manager exists before saving.
-    /// </summary>
+ 
     public static GameDataManager EnsureExists()
     {
         if (Instance != null) return Instance;
