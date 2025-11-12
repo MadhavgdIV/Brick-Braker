@@ -1,7 +1,5 @@
-using System.IO;
 using UnityEngine;
 using TMPro;
-
 
 public class GameOverManager : MonoBehaviour
 {
@@ -23,24 +21,16 @@ public class GameOverManager : MonoBehaviour
             // EconomyManager Awake() will run and load/save file as needed
         }
 
-        // Read values (score/highscore/game result come from PlayerPrefs in existing flow)
-        int finalScore = PlayerPrefs.GetInt("FinalScore", 0);
-        int highScore = PlayerPrefs.GetInt("HighScore", 0);
-        int gameResult = PlayerPrefs.GetInt("GameResult", 0); // 1 = win, 0 = lose
+        // Read values from GameDataManager (JSON)
+        var gd = GameDataManager.Instance?.GetData();
+
+        int finalScore = gd?.finalScore ?? 0;
+        int highScore = gd?.highScore ?? 0;
+        bool didWin = gd?.didWin ?? false;
+        int lastStreakBonus = gd?.lastStreakBonus ?? 0;
 
         // Coins: try EconomyManager (preferred). If still null, fallback to 0.
-        int coins = 0;
-        if (EconomyManager.Instance != null)
-        {
-            coins = EconomyManager.Instance.GetCoins();
-        }
-        else
-        {
-            Debug.LogWarning("EconomyManager still null after attempted creation. Showing 0 coins.");
-        }
-
-        // Last streak bonus (saved by GameManager before loading this scene)
-        int lastStreakBonus = PlayerPrefs.GetInt("LastStreakBonus", 0);
+        int coins = EconomyManager.Instance != null ? EconomyManager.Instance.GetCoins() : 0;
 
         // Safely populate UI elements (guard each one)
         if (finalScoreText != null)
@@ -54,7 +44,7 @@ public class GameOverManager : MonoBehaviour
             Debug.LogWarning("GameOverManager: highScoreText is not assigned in the Inspector.");
 
         if (resultText != null)
-            resultText.text = (gameResult == 1) ? "YOU WIN!" : "GAME OVER";
+            resultText.text = didWin ? "YOU WIN!" : "GAME OVER";
         else
             Debug.LogWarning("GameOverManager: resultText is not assigned in the Inspector.");
 
@@ -64,7 +54,7 @@ public class GameOverManager : MonoBehaviour
             Debug.LogWarning("GameOverManager: coinsText is not assigned in the Inspector.");
 
         // Show the streak bonus if the player won and a bonus exists
-        if (gameResult == 1 && lastStreakBonus > 0)
+        if (didWin && lastStreakBonus > 0)
         {
             string bonusText = $"+{lastStreakBonus} bonus!";
             if (streakBonusText != null)

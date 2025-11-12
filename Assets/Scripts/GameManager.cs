@@ -40,6 +40,10 @@ public class GameManager : MonoBehaviour
             return;
         }
 
+        // Ensure GameDataManager exists early so saves will succeed later.
+        // This creates a GameDataManager GameObject if one wasn't placed in the scene.
+        GameDataManager.EnsureExists();
+
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -150,20 +154,6 @@ public class GameManager : MonoBehaviour
     // Shared finalization logic for win/lose
     private void FinalizeScoreAndLoadGameOver(bool didWin)
     {
-        // Save final score and win/lose flag for GameOver scene
-        PlayerPrefs.SetInt("FinalScore", score);
-        PlayerPrefs.SetInt("GameResult", didWin ? 1 : 0);
-
-        // Update high score if needed
-        int prevHigh = PlayerPrefs.GetInt("HighScore", 0);
-        if (score > prevHigh)
-        {
-            PlayerPrefs.SetInt("HighScore", score);
-            Debug.Log($"New high score: {score}");
-        }
-
-        PlayerPrefs.Save();
-
         // Award coins and update streaks
         int lastStreakBonus = 0;
 
@@ -197,18 +187,26 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        // Save lastStreakBonus for GameOver scene to display
-        PlayerPrefs.SetInt("LastStreakBonus", lastStreakBonus);
-        PlayerPrefs.Save();
+        // Ensure a GameDataManager exists and save results to JSON
+        GameDataManager.EnsureExists(); // safe no-op if already present
+
+        if (GameDataManager.Instance != null)
+        {
+            GameDataManager.Instance.SetFinalResults(score, didWin, lastStreakBonus);
+
+            // Debug: read back what was saved and log — helps confirm file wrote correctly
+            var saved = GameDataManager.Instance.GetData();
+            Debug.Log($"GameData saved -> finalScore: {saved.finalScore}, highScore: {saved.highScore}, didWin: {saved.didWin}, lastStreakBonus: {saved.lastStreakBonus}");
+        }
+        else
+        {
+            Debug.LogError("GameDataManager instance not found — results will not be persisted to JSON.");
+        }
 
         // Load GameOver scene
         SceneManager.LoadScene(gameOverSceneName);
     }
 
-    // Helpers to reset objects in the loaded Game scene
-    /// <summary>
-    /// Resets paddle first, then resets the ball so ball will spawn above paddle's reset position.
-    /// </summary>
     private void ResetBallAndPaddle()
     {
         // reset paddle first
