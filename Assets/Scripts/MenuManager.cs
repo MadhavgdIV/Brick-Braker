@@ -11,7 +11,7 @@ public class MenuManager : MonoBehaviour
 
     [Header("Economy Settings")]
     [Tooltip("Entry fee deducted before starting the game.")]
-    public int entryFee = 100; // ✅ ENTRY FEE IMPLEMENTED HERE
+    public int entryFee = 100; //  ENTRY FEE IMPLEMENTED HERE
     public TextMeshProUGUI coinText;
     public TextMeshProUGUI entryFeeText;
 
@@ -30,7 +30,7 @@ public class MenuManager : MonoBehaviour
         // Check for EconomyManager
         if (EconomyManager.Instance == null)
         {
-            Debug.LogError("❌ EconomyManager not found in scene! Add it to the Menu scene.");
+            Debug.LogError(" EconomyManager not found in scene! Add it to the Menu scene.");
             return;
         }
 
@@ -67,16 +67,16 @@ public class MenuManager : MonoBehaviour
             return;
         }
 
-        // ✅ Deduct entry fee
+        //  Deduct entry fee
         if (EconomyManager.Instance.TryDeduct(entryFee))
         {
-            Debug.Log($"✅ Entry Fee of {entryFee} deducted. Starting Game...");
+            Debug.Log($" Entry Fee of {entryFee} deducted. Starting Game...");
             UpdateCoinUI();
             SceneManager.LoadScene(gameSceneName);
         }
         else
         {
-            Debug.Log("⚠️ Not enough coins to start the game.");
+            Debug.Log(" Not enough coins to start the game.");
             if (popupMessageText != null)
                 popupMessageText.text = "Not enough coins!";
             StartCoroutine(ShowPopupCoroutine());
